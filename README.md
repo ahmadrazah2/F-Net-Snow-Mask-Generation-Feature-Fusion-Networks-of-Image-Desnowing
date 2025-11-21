@@ -1,42 +1,44 @@
 
-📄 **F-Net: Snow Mask Generation Feature-Fusion Networks of Image Desnowing**
 
----
+# 📘 F-Net: Snow Mask Generation Feature-Fusion Networks of Image Desnowing
 
-## 📘 **README.md**
+This repository contains the official implementation of **F-Net**, a deep learning–based framework for:
 
-```markdown
-# F-Net: Snow Mask Generation Feature-Fusion Networks of Image Desnowing
+✔️ Snow mask generation
+✔️ Image desnowing (clean image reconstruction)
+✔️ Feature-fusion–based learning for snow localization
 
-This repository contains the official implementation of **F-Net**, a deep learning-based approach for **snow mask generation** and **image desnowing**.  
-F-Net introduces a feature-fusion strategy that combines hierarchical representations to accurately detect and remove snow artifacts from images.
+F-Net predicts a soft mask, converts it into a clean binary mask, and uses inpainting to generate a clean snow-free image.
 
 ---
 
 ## 🧠 Overview
 
 **F-Net** consists of:
-- A **Fusion Network** to learn multi-scale snow features.
-- A **Snow Mask Generation** mechanism that outputs a binary or soft snow region mask.
-- A reconstruction module (can be extended) to recover the clean, snow-free image.
+
+* **FusionNet** – extracts multi-scale snow features
+* **Mask Generator (`mask.py`)** – converts predicted mask to a binary, noise-free mask
+* **Clean Image Generator (`clean.py`)** – uses predicted mask + Telea inpainting for desnowing
+* **Training Framework (`train.py`)** – with validation support
+* **Focal + Dice Loss** – for accurate and stable mask generation
 
 ---
 
-## 🏗️ Repository Structure
+## 🗂️ Repository Structure
 
-
-
+```
 F-Net-Snow-Mask-Generation/
 │
-├── model.py           # F-Net architecture (ConvBlock + FusionNet)
-├── dataset.py         # Dataset and dataloaders for training and validation
-├── loss.py            # Focal + Dice hybrid loss function
-├── train.py           # Training + validation loop
-├── test.py            # Inference and mask prediction
-├── utils.py           # Device setup, model loading utilities
+├── model.py                # F-Net architecture (ConvBlock + FusionNet)
+├── dataset.py              # Dataset + dataloaders (train/val)
+├── loss.py                 # Focal + Dice hybrid loss
+├── train.py                # Training + validation loop
+├── mask.py                 # Generate clean binary snow masks (formerly test.py)
+├── clean.py                # Generate clean snow-free images using binary mask
+├── utils.py                # Device setup, model loading utilities
 │
-├── checkpoints/       # Saved model weights
-│   └── fusion_mask.pth
+├── checkpoints/            # Saved model weights
+│   └── fusion_net.pth
 │
 ├── data/
 │   ├── train/
@@ -47,155 +49,156 @@ F-Net-Snow-Mask-Generation/
 │       └── mask/
 │
 ├── results/
-│   ├── predicted_masks/
-│   └── clean_images/
+│   ├── predicted_masks/    # Output masks from mask.py
+│   ├── clean_images/       # Output clean images from clean.py
 │
-├── requirements.txt   # Python dependencies
-└── README.md
-
-````
+└── requirements.txt        # Python dependencies
+```
 
 ---
 
 ## 🔧 Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ahmadraza/F-Net-Snow-Mask-Generation.git
-   cd F-Net-Snow-Mask-Generation
-````
-
-2. **Create and activate a virtual environment**
-
-   ```bash
-   python -m venv fnet_env
-   source fnet_env/bin/activate   # For Mac/Linux
-   fnet_env\Scripts\activate      # For Windows
-   ```
-
-3. **Install dependencies**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+git clone https://github.com/<your-username>/F-Net-Snow-Mask-Generation.git
+cd F-Net-Snow-Mask-Generation
+pip install -r requirements.txt
+```
 
 ---
 
-## 🧩 Dataset Structure
+## 🧩 Dataset Format
 
-Organize your dataset as follows:
+Your dataset must follow this structure:
 
 ```
 data/
 ├── train/
-│   ├── snow/   # Snowy images
-│   └── mask/   # Ground truth masks
+│   ├── snow/
+│   └── mask/
 └── val/
     ├── snow/
     └── mask/
 ```
 
-✅ Both snow and mask folders should contain images with the same filenames (e.g., `0001.jpg` in both).
+Filenames in `snow/` and `mask/` must match (e.g., `001.jpg` → `001.jpg`).
 
 ---
 
-## 🚀 Training
+# 🎯 Usage Instructions (Important)
 
-Train the model with:
+## ✅ 1. Generate a Snow Mask (mask.py)
+
+If you want to generate a **binary snow mask**, open the file:
+
+```
+mask.py
+```
+
+Go to **line 55** and replace the image path:
+
+```python
+image_path = "path/to/your/snowy_image.jpg"
+```
+
+Then run:
 
 ```bash
-python train.py
+python mask.py
 ```
 
-You can adjust parameters like batch size, learning rate, and number of epochs inside `train.py`.
+Your cleaned, binary mask will be saved automatically in:
+
+```
+results/predicted_masks/
+```
 
 ---
 
-## 🔍 Testing / Inference
+## ✅ 2. Generate a Clean (Desnowed) Image (clean.py)
 
-To generate a snow mask for a new image:
+If you want a **clean snow-free image**, open the file:
+
+```
+clean.py
+```
+
+Go to **line 139** and replace your image path:
+
+```python
+image_path = "path/to/your/snowy_image.jpg"
+```
+
+Then run:
 
 ```bash
-python test.py
+python clean.py
 ```
 
-Default paths:
-
-* Input image: `data/val/snow/sample.jpg`
-* Output mask: `results/predicted_masks/sample.jpg`
-
----
-
-## 🧪 Loss Function
-
-The training uses a **Focal + Dice hybrid loss** that enhances learning for unbalanced snow/no-snow regions:
-
-[
-L = (1 + \text{DiceLoss}) \times \text{FocalLoss}
-]
-
----
-
-
-## ⚙️ Model Checkpoints
-
-Trained weights are automatically saved in:
+Your clean image will be saved in:
 
 ```
-checkpoints/epoch_1.pth
-checkpoints/epoch_2.pth
-...
-```
-
-You can specify a checkpoint to resume or test in `load_model()` inside `utils.py`.
-
----
-
-## 🧑‍💻 Citation
-
-If you use this code in your research, please cite:
-
-```
-@article{ahmad2025fnet,
-  title={F-Net: Snow Mask Generation Feature-Fusion Networks of Image Desnowing},
-  author={Ahmad Raza and [Your Supervisor's Name]},
-  year={2025},
-  journal={Under Review}
-}
+results/clean_images/
 ```
 
 ---
 
-## 🌍 Acknowledgments
+## 🔥 Quick Summary
 
-This work was developed at **Kyungsung University, Busan**, under the supervision of **Prof. 김민주**.
-Special thanks to the open-source PyTorch community and prior works in image desnowing research.
-
----
-
-## 📫 Contact
-
-For queries or collaborations:
-**Ahmad Raza**
-📧 [[ahmadrazah2@gmail.com]]
-🎓 M.S. IT Engineering, Kyungsung University
-🇰🇷 Busan, South Korea
-
-````
+| Task                 | File       | Line to Edit | Run Command       |
+| -------------------- | ---------- | ------------ | ----------------- |
+| Generate Mask        | `mask.py`  | **55**       | `python mask.py`  |
+| Generate Clean Image | `clean.py` | **139**      | `python clean.py` |
 
 ---
 
-## 📦 **requirements.txt**
+## 🖼️ Example Outputs
 
-```text
+*(You can add images later)*
+
+| Snow Image | Predicted Mask   | Binary Mask     | Clean Image          |
+| ---------- | ---------------- | --------------- | -------------------- |
+| *(input)*  | *(model output)* | *(thresholded)* | *(inpainted result)* |
+
+---
+
+## 📊 Training (Optional)
+
+To train your model:
+
+```bash
+python train.py --epochs 50 --batch_size 8 --lr 1e-4
+```
+
+Checkpoints will be saved in:
+
+```
+checkpoints/
+```
+
+---
+
+## 📦 Requirements
+
+```
 torch>=2.0.0
 torchvision>=0.15.0
 numpy>=1.24.0
-pillow>=10.0.0
-tqdm>=4.66.0
+pillow>=9.0.0
+opencv-python>=4.7.0
+matplotlib>=3.7.0
+scikit-image>=0.20.0
+tqdm>=4.65.0
+```
 
-opencv-python>=4.8.0
-matplotlib>=3.8.0
-````
+
 
 ---
+
+## 👨‍💻 Author
+
+**Ahmad Raza Hussain**
+Master’s Student — Kyungsung University, Busan, South Korea
+📧 [email:ahmadrazah2@gmail.com)
+
+
